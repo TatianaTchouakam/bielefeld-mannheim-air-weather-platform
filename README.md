@@ -29,9 +29,21 @@ DWD  ────┘                                                            
 - **Silver:** cleaned, typed, deduplicated, quality-checked data
 - **Gold:** air quality joined with weather, daily aggregates ready for analysis
 
+### Target architecture (planned)
+
+```
+UBA / DWD ─► Python producers ─► Kafka (Avro + Schema Registry) ─► Consumers ─► Iceberg tables on MinIO (S3)
+                                                                                     │
+                                       Airflow (batch) ─► PySpark / dbt ─► Gold ─► Dashboard
+                                                                                     │
+                        Kubernetes + Helm · Terraform · Prometheus/Grafana · OpenLineage/Marquez
+```
+
 ## Tech stack
 
-`Python` · `Apache Airflow` · `PySpark` · `Apache Parquet` · `Kubernetes` · `Helm` · `Docker` · `Streamlit` · `Git & GitHub`
+**Current:** `Python` · `Apache Airflow` · `PySpark` · `Apache Parquet` · `Kubernetes` · `Helm` · `Docker` · `Streamlit` · `Git & GitHub`
+
+**Planned:** `Kafka (Redpanda)` · `Avro` · `Schema Registry` · `Apache Iceberg` · `MinIO` · `dbt` · `Terraform` · `GitHub Actions` · `Prometheus` · `Grafana` · `OpenLineage` · `Marquez`
 
 ## Project structure
 
@@ -46,6 +58,43 @@ notebooks/        Exploration notebooks
 docs/             Architecture notes and learning log
 tests/            Unit and data-quality tests
 ```
+
+## Roadmap
+
+### Phase 1 – Batch pipeline (core)
+- [ ] Ingestion scripts for UBA and DWD
+- [ ] PySpark jobs: bronze → silver → gold
+- [ ] Daily Airflow DAG
+- [ ] Deployment on Kubernetes (kind + Helm)
+- [ ] Streamlit dashboard
+- [ ] Unit and data-quality tests
+
+### Phase 2 – Streaming ingestion
+- [ ] Run Kafka (Redpanda) locally with Docker Compose
+- [ ] Define Avro schemas for air-quality and weather events
+- [ ] Set up Schema Registry and test schema evolution (e.g. add an optional field)
+- [ ] Python producer (API → Kafka) and consumer (Kafka → bronze)
+
+### Phase 3 – Lakehouse storage
+- [ ] Store bronze/silver/gold as Apache Iceberg tables on MinIO (S3-compatible)
+- [ ] Partitioning by date and station
+
+### Phase 4 – Transformation & orchestration
+- [ ] Airflow best practices: retries, backfills, SLAs
+- [ ] dbt models and tests on the gold layer (freshness, not_null, unique)
+- [ ] Optional: load gold data into a warehouse (DuckDB locally, Redshift Serverless on AWS)
+
+### Phase 5 – Platform & infrastructure
+- [ ] Infrastructure as Code with Terraform
+- [ ] Secrets management (Kubernetes Secrets / Vault)
+- [ ] CI/CD with GitHub Actions (lint, tests, dbt build)
+
+### Phase 6 – Reliability & governance
+- [ ] Observability: Prometheus + Grafana dashboards
+- [ ] Define one SLO (e.g. data freshness < 1 hour) with an alert
+- [ ] Write a runbook for a pipeline failure
+- [ ] Data lineage with OpenLineage + Marquez
+- [ ] Data catalog and ownership documentation
 
 ## Learning log
 
