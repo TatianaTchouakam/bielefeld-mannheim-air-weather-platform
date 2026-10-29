@@ -1,0 +1,11 @@
+default_city: bielefeld
+
+cities:
+  bielefeld:
+    uba_stations: []        # to be confirmed
+    dwd_station_id: ""      # to be confirmed
+    timezone: Europe/Berlin
+  mannheim:
+    uba_stations: []        # to be confirmed
+    dwd_station_id: ""      # to be confirmed
+    timezone: Europe/Berlin

@@ -1,10 +1,12 @@
-# Mannheim Air & Weather Data Platform
+# Air & Weather Data Platform – Bielefeld & Mannheim
 
 > 🚧 **Work in progress** – this README is updated as the project evolves.
 
-A data engineering project that collects **air-quality** and **weather** data for **Mannheim, Germany** every day, stores it in a Parquet data lake, transforms it with **PySpark**, orchestrates everything with **Apache Airflow**, and runs on **Kubernetes**.
+A data engineering project that collects **air-quality** and **weather** data for **Bielefeld** and **Mannheim** (Germany) every day, stores it in a Parquet data lake, transforms it with **PySpark**, orchestrates everything with **Apache Airflow**, and runs on **Kubernetes**.
 
-**Business question:** *How does the weather (wind, temperature, rain) influence air pollution (NO₂, PM10, O₃) in Mannheim?*
+The pipeline is **configurable by city**: new cities can be added by changing a single config file.
+
+**Business question:** *How does the weather (wind, temperature, rain) influence air pollution (NO₂, PM10, O₃), and how do Bielefeld and Mannheim compare?*
 
 ---
 
@@ -12,22 +14,42 @@ A data engineering project that collects **air-quality** and **weather** data fo
 
 | Source | Data | Access |
 |---|---|---|
-| Umweltbundesamt (UBA) | Air quality measurements (NO₂, PM10, PM2.5, O₃) from Mannheim stations | UBA Air Data API |
-| Deutscher Wetterdienst (DWD) | Hourly weather observations for Mannheim (temperature, wind, precipitation) | DWD Open Data portal (opendata.dwd.de) |
+| Umweltbundesamt (UBA) | Air quality measurements (NO₂, PM10, PM2.5, O₃) from Bielefeld and Mannheim stations | UBA Air Data API |
+| Deutscher Wetterdienst (DWD) | Hourly weather observations (temperature, wind, precipitation) | DWD Open Data portal (opendata.dwd.de) |
+
+## Configuration
+
+Cities and their measuring stations are defined in `config/cities.yaml`:
+
+```yaml
+default_city: bielefeld
+
+cities:
+  bielefeld:
+    uba_stations: []        # to be confirmed
+    dwd_station_id: ""      # to be confirmed
+    timezone: Europe/Berlin
+  mannheim:
+    uba_stations: []        # to be confirmed
+    dwd_station_id: ""      # to be confirmed
+    timezone: Europe/Berlin
+```
+
+Adding a new city = adding a new entry to this file. No code changes needed.
 
 ## Architecture
 
 ```
 UBA API ─┐
          ├─► Python ingestion ─► Bronze (Parquet) ─► PySpark ─► Silver (clean) ─► PySpark ─► Gold (air + weather)
-DWD  ────┘                                                                                      │
-                                                                                                ▼
-                          Apache Airflow (daily DAG)  ·  running on Kubernetes (kind + Helm)   Dashboard
+DWD  ────┘          ▲                                                                           │
+                    │                                                                           ▼
+           config/cities.yaml      Apache Airflow (daily DAG) · Kubernetes (kind + Helm)    Dashboard
 ```
 
-- **Bronze:** raw data exactly as received, partitioned by date
+- **Bronze:** raw data exactly as received, partitioned by city and date
 - **Silver:** cleaned, typed, deduplicated, quality-checked data
-- **Gold:** air quality joined with weather, daily aggregates ready for analysis
+- **Gold:** air quality joined with weather, daily aggregates ready for analysis and city comparison
 
 ### Target architecture (planned)
 
@@ -48,6 +70,7 @@ UBA / DWD ─► Python producers ─► Kafka (Avro + Schema Registry) ─► C
 ## Project structure
 
 ```
+config/           City and station configuration (cities.yaml)
 ingestion/        Python scripts that call the UBA and DWD sources
 transformations/  PySpark jobs (bronze → silver → gold)
 dags/             Airflow DAGs
@@ -61,8 +84,9 @@ tests/            Unit and data-quality tests
 
 ## Roadmap
 
-### Phase 1 – Batch pipeline (core)
-- [ ] Ingestion scripts for UBA and DWD
+### Phase 1 – Batch pipeline (core, Bielefeld first)
+- [ ] Identify UBA and DWD stations for Bielefeld and fill `config/cities.yaml`
+- [ ] Ingestion scripts for UBA and DWD (city read from config)
 - [ ] PySpark jobs: bronze → silver → gold
 - [ ] Daily Airflow DAG
 - [ ] Deployment on Kubernetes (kind + Helm)
@@ -77,7 +101,7 @@ tests/            Unit and data-quality tests
 
 ### Phase 3 – Lakehouse storage
 - [ ] Store bronze/silver/gold as Apache Iceberg tables on MinIO (S3-compatible)
-- [ ] Partitioning by date and station
+- [ ] Partitioning by city, date and station
 
 ### Phase 4 – Transformation & orchestration
 - [ ] Airflow best practices: retries, backfills, SLAs
@@ -95,6 +119,11 @@ tests/            Unit and data-quality tests
 - [ ] Write a runbook for a pipeline failure
 - [ ] Data lineage with OpenLineage + Marquez
 - [ ] Data catalog and ownership documentation
+
+### Phase 7 – City comparison
+- [ ] Add Mannheim via config only (no code changes)
+- [ ] Compare air quality and weather effects between Bielefeld and Mannheim
+- [ ] Comparison view in the Streamlit dashboard
 
 ## Learning log
 
